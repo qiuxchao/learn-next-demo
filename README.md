@@ -24,6 +24,34 @@ Next.js 具有同类框架中最佳的“开发人员体验”和许多内置功
 
 ## 安装&启动
 
+使用 `create-next-app` 创建新的 Next.js 应用程序，它会自动为你设置所有内容。创建项目，请运行：
+
+```sh
+npx create-next-app@latest
+# or
+yarn create next-app
+```
+
+如果要使用 TypeScript 开发项目，可以通过 `--typescript` 参数创建 TypeScript 项目：
+
+```sh
+npx create-next-app@latest --typescript
+# or
+yarn create next-app --typescript
+```
+
+安装完成后:
+
+- 运行 `npm run dev` 或 `yarn dev` 来启动开发服务器，访问地址为 `http://localhost:3000`。
+
+- 通过 `http://localhost:3000` 地址访问你的应用程序。
+
+- 编辑 `pages/index.js` 文件并在浏览器中查看更新。
+
+有关使用 `create-next-app` 的更多信息，请查看 [`create-next-app`](https://www.nextjs.cn/docs/api-reference/create-next-app) 文档。
+
+
+
 ## 开发
 
 ### 路由
@@ -37,6 +65,51 @@ import Link from 'next/link'
 <Link href="/posts/first-post"><a>To first post</a></Link>
 ```
 这种跳转方式与 `<a>` 标签跳转的区别是：前者不会触发页面的刷新，而后者会。
+
+#### 动态路由
+
+创建一个名为 `[id].js` 的页面。以 `[` 开头和 `]` 结尾的页面是Next.js中的[动态路由](https://www.nextjs.cn/docs/routing/dynamic-routes)。
+
+使用 [`getStaticPaths`](https://www.nextjs.cn/docs/basic-features/data-fetching#getstaticpaths-static-generation) 来生成动态路由的参数:
+
+```jsx
+export async function getStaticPaths() {
+  // 返回一个包含 paths 属性的对象，paths 取值为数组，每一项是一个页面的参数
+  // params 将会被传给页面的 props 或者页面 getStaticProps 方法的参数
+  // 这里的 id 可以请求接口生成
+  return {
+    paths: [
+      {
+        params: {
+          id: 1,
+        }
+      },
+      {
+        params: {
+          id: 1,
+        }
+      }
+    ]
+  }
+}
+```
+
+然后在页面 `getStaticProps` 方法中接受动态路由的参数：
+
+```jsx
+export async function getStaticProps({ params }) {
+  // 使用 getStaticPaths 生成的路由参数将会传到这里的 params
+  const { id } = params;
+  // 根据 id 获取数据
+  const pageData = await getData(id);
+  // 将静态渲染的数据返回给页面使用
+  return {
+    props: {
+      pageData,
+    }
+  }
+}
+```
 
 ### 样式
 
@@ -116,14 +189,26 @@ Next.js 的两种预渲染形式。
 
 ## 部署
 
-## 知识点
+Next.js 可以部署到任何安装 Node.js 服务器。
 
-### 代码拆分和预取
+Next.js 的 `package.json` 中有以下可运行的脚本：
 
-Next.js 会自动进行代码拆分，因此每个页面只加载该页面所需的内容。这意味着在**呈现主页时，最初不会提供其他页面的代码**。
+```json
+{
+  "scripts": {
+    "dev": "next",
+    "build": "next build",
+    "start": "next start"
+  }
+}
+```
 
-即使您添加数百个页面，这也可以确保主页快速加载。
+在服务器中 `git pull` 拉取到 Next.js 项目代码后，执行 `npm i` 安装依赖；
 
-仅加载您请求的页面的代码也意味着页面变得孤立。如果某个页面抛出错误，应用程序的其余部分仍然可以工作。
+然后执行一次 `npm run build` 脚本，在文件夹中构建生产应用程序 `.next`；
 
-在 Next.js 的生产版本中，**每当Link组件出现在浏览器的视口中时，Next.js 都会自动在后台预取链接页面的代码**。当您单击链接时，目标页面的代码已经在后台加载，页面转换几乎是即时的！
+构建后，运行 `npm run start` 启动一个支持混合页面的 Node.js 服务器，为静态生成的和服务器端呈现的页面以及 API 路由提供服务。
+
+> 提示：可以自定义 `package.json` 中的 `start` 脚本以接受 `PORT` 参数来自定义启动端口，方法是将其更新为： `"start": "next start -p $PORT"`.
+
+服务启动后，通过服务器公网地址加端口号即可访问网站。
